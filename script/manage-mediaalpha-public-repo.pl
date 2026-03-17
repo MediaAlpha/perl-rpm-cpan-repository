@@ -2,6 +2,7 @@
 
 use strict;
 use warnings;
+use RPM::CPAN::Repository;
 
 die "Error: Must run as root\n" if $< != 0;
 
@@ -15,9 +16,6 @@ my $action = $ARGV[0];
 unless ($action eq 'add' || $action eq 'remove') {
     die "Error: Invalid action '$action'. You need to choose 'add' or 'remove'\n";
 }
-
-use lib '.';
-use RPM::CPAN::Repository;
 
 if ($action eq 'add') {
     RPM::CPAN::Repository::detect_al2023();

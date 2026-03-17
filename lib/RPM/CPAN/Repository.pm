@@ -2,34 +2,30 @@ package RPM::CPAN::Repository;
 
 use strict;
 use warnings;
+use Config::Tiny;
 
 # we only support AL2023
 sub detect_al2023 {
-    unless (-f "/etc/os-release") {
-        die "Error: /etc/os-release not found\n";
-    }
-
     my $os_release = '/etc/os-release';
-    my %os;
 
-    open(my $fh, '<', $os_release) or die "Can't open $os_release: $!";
+    my $config = Config::Tiny->read($os_release)
+        or die "Can't read $os_release: " . Config::Tiny->errstr . "\n";
 
-    while (my $line = <$fh>) {
-        chomp $line;
-        if ($line =~ /^(NAME|VERSION)="?([^"]+)"?$/) {
-            $os{$1} = $2;
-        }
-    }
-    close($fh);
+    my $name    = $config->{_}{NAME}    // '';
+    my $version = $config->{_}{VERSION} // '';
 
-    # Check if this is AL2023
-    if ($os{NAME} ne 'Amazon Linux') {
-        die "Error: This script requires Amazon Linux (found: $os{NAME})\n";
+    # Strip surrounding quotes if present
+    $name    =~ s/^"(.*)"$/$1/;
+    $version =~ s/^"(.*)"$/$1/;
+
+    unless ($name =~ /amazon linux/i) {
+        die "Error: This script requires Amazon Linux (found: $name)\n";
     }
 
-    if ($os{VERSION} ne '2023') {
-        die "Error: This script requires Amazon Linux 2023 (found: Amazon Linux $os{VERSION})\n";
+    if ($version ne '2023') {
+        die "Error: This script requires Amazon Linux 2023 (found: Amazon Linux $version)\n";
     }
+
     print "OK: Amazon Linux 2023 detected\n";
 }
 
@@ -59,27 +55,10 @@ sub add_the_public_ma_repo {
 [mediaalpha]
 name     = mediaalpha-public
 baseurl  = http://s3.amazonaws.com/mediaalpha-public
-gpgcheck = 1 
+gpgcheck = 1
 priority = 10
 END
 
-    # Check if file exists and matches
-    if (-f $repo_file) {
-        open(my $fh, '<', $repo_file) or die "Can't read $repo_file: $!";
-        my $existing = do { local $/; <$fh> };
-        close($fh);
-
-        if ($existing eq $content) {
-            print "OK: $repo_file already exists and is correct\n";
-            return;
-        }
-        print "Updating $repo_file (content differs)\n";
-    }
-    else {
-        print "Creating $repo_file\n";
-    }
-
-    # Write the file
     open(my $fh, '>', $repo_file) or die "Can't write $repo_file: $!";
     print $fh $content;
     close($fh);
