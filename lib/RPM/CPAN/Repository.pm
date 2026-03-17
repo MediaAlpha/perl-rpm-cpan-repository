@@ -59,10 +59,37 @@ gpgcheck = 1
 priority = 10
 END
 
+    my $existed = -f $repo_file;
     open(my $fh, '>', $repo_file) or die "Can't write $repo_file: $!";
     print $fh $content;
     close($fh);
-    print "OK: Successfully wrote $repo_file\n";
+    print $existed ? "OK: Updated $repo_file\n" : "OK: Created $repo_file\n";
+}
+
+sub check_the_public_ma_repo {
+    my $repo_file = '/etc/yum.repos.d/mediaalpha-public.repo';
+
+    my $content = <<'END';
+[mediaalpha]
+name     = mediaalpha-public
+baseurl  = http://s3.amazonaws.com/mediaalpha-public
+gpgcheck = 1
+priority = 10
+END
+
+    unless (-f $repo_file) {
+        die "Error: $repo_file does not exist\n";
+    }
+
+    open(my $fh, '<', $repo_file) or die "Can't read $repo_file: $!";
+    my $existing = do { local $/; <$fh> };
+    close($fh);
+
+    if ($existing eq $content) {
+        print "OK: $repo_file exists and is correct\n";
+    } else {
+        die "Error: $repo_file exists but content differs from expected\n";
+    }
 }
 
 sub remove_the_public_ma_repo {
