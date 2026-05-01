@@ -3,6 +3,17 @@ package RPM::CPAN::Repository;
 use strict;
 use warnings;
 use Config::Tiny;
+use File::Basename qw(dirname);
+use POSIX qw(uname);
+
+our $REPO_FILE   = '/etc/yum.repos.d/mediaalpha-public.repo';
+my $REPO_CONTENT = <<'END';
+[mediaalpha-public-perl]
+name     = mediaalpha-public-perl-5.42.2
+baseurl  = https://mediaalpha-public-rpm-repo.s3.amazonaws.com/perl/5.42.2/$basearch
+gpgcheck = 1
+gpgkey   = https://mediaalpha-public-rpm-repo.s3.amazonaws.com/RPM-GPG-KEY-mediaalpha
+END
 
 # we only support AL2023
 sub detect_al2023 {
@@ -29,79 +40,53 @@ sub detect_al2023 {
     print "OK: Amazon Linux 2023 detected\n";
 }
 
-# for now we only support x86_64
+# supports x86_64 and aarch64 (Graviton)
 sub detect_architecture {
-    my $arch = `uname --processor 2>&1`;
-    if ($? != 0) {
-        die "Error: Failed to run 'uname --processor': $!\n";
-    }
-    chomp $arch;
+    my (undef, undef, undef, undef, $arch) = uname();
 
-    if ($arch ne 'x86_64') {
-        die "Error: This script requires x86_64 architecture (found: $arch)\n";
+    unless ($arch eq 'x86_64' || $arch eq 'aarch64') {
+        die "Error: Unsupported architecture (found: $arch, supported: x86_64, aarch64)\n";
     }
+
+    print "OK: $arch architecture detected\n";
+    return $arch;
 }
 
 sub check_if_repo_dir_exists {
-    unless (-d "/etc/yum.repos.d/") {
-        die "Error: /etc/yum.repos.d/ directory does not exist\n";
+    my $dir = dirname($REPO_FILE);
+    unless (-d $dir) {
+        die "Error: $dir directory does not exist\n";
     }
 }
 
 sub add_the_public_ma_repo {
-    my $repo_file = '/etc/yum.repos.d/mediaalpha-public.repo';
-
-    my $content = <<'END';
-[mediaalpha]
-name     = mediaalpha-public
-baseurl  = http://s3.amazonaws.com/mediaalpha-public
-gpgcheck = 1
-priority = 10
-END
-
-    my $existed = -f $repo_file;
-    open(my $fh, '>', $repo_file) or die "Can't write $repo_file: $!";
-    print $fh $content;
+    open(my $fh, '>', $REPO_FILE) or die "Can't write $REPO_FILE: $!\n";
+    print $fh $REPO_CONTENT;
     close($fh);
-    print $existed ? "OK: Updated $repo_file\n" : "OK: Created $repo_file\n";
+    print "OK: Wrote $REPO_FILE\n";
 }
 
 sub check_the_public_ma_repo {
-    my $repo_file = '/etc/yum.repos.d/mediaalpha-public.repo';
-
-    my $content = <<'END';
-[mediaalpha]
-name     = mediaalpha-public
-baseurl  = http://s3.amazonaws.com/mediaalpha-public
-gpgcheck = 1
-priority = 10
-END
-
-    unless (-f $repo_file) {
-        die "Error: $repo_file does not exist\n";
-    }
-
-    open(my $fh, '<', $repo_file) or die "Can't read $repo_file: $!";
+    open(my $fh, '<', $REPO_FILE) or die "Error: $REPO_FILE does not exist or can't be read: $!\n";
     my $existing = do { local $/; <$fh> };
     close($fh);
 
-    if ($existing eq $content) {
-        print "OK: $repo_file exists and is correct\n";
+    if ($existing eq $REPO_CONTENT) {
+        print "OK: $REPO_FILE exists and is correct\n";
     } else {
-        die "Error: $repo_file exists but content differs from expected\n";
+        die "Error: $REPO_FILE exists but content differs from expected\n";
     }
 }
 
 sub remove_the_public_ma_repo {
-    my $repo_file = '/etc/yum.repos.d/mediaalpha-public.repo';
-
-    unless (-f $repo_file) {
-        print "OK: $repo_file does not exist (nothing to remove)\n";
+    unless (-f $REPO_FILE) {
+        print "OK: $REPO_FILE does not exist (nothing to remove)\n";
         return;
     }
 
-    unlink($repo_file) or die "Error: Failed to remove $repo_file: $!\n";
-    print "OK: Successfully removed $repo_file\n";
+    unlink($REPO_FILE) or die "Error: Failed to remove $REPO_FILE: $!\n";
+    print "OK: Successfully removed $REPO_FILE\n";
 }
 
 1; # Must return true
+END
