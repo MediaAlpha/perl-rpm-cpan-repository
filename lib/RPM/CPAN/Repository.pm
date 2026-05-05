@@ -42,7 +42,7 @@ sub detect_al2023 {
 
 # supports x86_64 and aarch64 (Graviton)
 sub detect_architecture {
-    my (undef, undef, undef, undef, $arch) = uname();
+    my $arch = (uname())[4];
 
     unless ($arch eq 'x86_64' || $arch eq 'aarch64') {
         die "Error: Unsupported architecture (found: $arch, supported: x86_64, aarch64)\n";
