@@ -1,9 +1,11 @@
 {
    "abstract" : "Manage MediaAlpha public RPM CPAN repository",
    "author" : [
-      "MediaAlpha"
+      "Labros Chaidas <labros@mediaalpha.com>"
    ],
    "dynamic_config" : 1,
+   "generated_by" : "Module::Build::Tiny version 0.052",
+   "release_status" : "stable",
    "license" : [
       "gpl_3"
    ],
