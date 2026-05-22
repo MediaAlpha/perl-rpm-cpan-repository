@@ -6,6 +6,8 @@ use Config::Tiny;
 use File::Basename qw(dirname);
 use POSIX qw(uname);
 
+our $VERSION = '0.0.1';
+
 our $REPO_FILE   = '/etc/yum.repos.d/mediaalpha-public.repo';
 my $REPO_CONTENT = <<'END';
 [mediaalpha-public-perl]
@@ -89,4 +91,66 @@ sub remove_the_public_ma_repo {
 }
 
 1; # Must return true
-END
+__END__
+
+=head1 NAME
+
+RPM::CPAN::Repository - Manage the MediaAlpha public RPM repository
+
+=head1 VERSION
+
+0.0.1
+
+=head1 SYNOPSIS
+
+    use RPM::CPAN::Repository;
+
+    RPM::CPAN::Repository::detect_al2023();
+    RPM::CPAN::Repository::detect_architecture();
+    RPM::CPAN::Repository::check_if_repo_dir_exists();
+    RPM::CPAN::Repository::add_the_public_ma_repo();
+
+=head1 DESCRIPTION
+
+C<RPM::CPAN::Repository> provides functions to install, verify, and remove the
+MediaAlpha public RPM repository configuration on Amazon Linux 2023 hosts
+(x86_64 and aarch64/Graviton).
+
+=head1 FUNCTIONS
+
+=head2 detect_al2023
+
+Reads C</etc/os-release> and dies unless the host is Amazon Linux 2023.
+
+=head2 detect_architecture
+
+Calls C<uname(2)> and dies unless the architecture is C<x86_64> or C<aarch64>.
+Returns the detected architecture string.
+
+=head2 check_if_repo_dir_exists
+
+Dies unless the C</etc/yum.repos.d> directory exists.
+
+=head2 add_the_public_ma_repo
+
+Writes the MediaAlpha public RPM repository configuration to
+C</etc/yum.repos.d/mediaalpha-public.repo>.
+
+=head2 check_the_public_ma_repo
+
+Reads the repo file and dies if its content differs from the expected template.
+
+=head2 remove_the_public_ma_repo
+
+Removes the repo file if it exists; silently succeeds if the file is absent.
+
+=head1 AUTHOR
+
+Labros Chaidas <labros@mediaalpha.com>
+
+=head1 LICENSE
+
+This software is licensed under the GNU General Public License, version 3.
+See the F<LICENSE> file distributed with this software for full details.
+
+=cut
